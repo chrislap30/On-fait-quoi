@@ -15,9 +15,10 @@
   .counters span { background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35); padding: 5px 11px; border-radius: 999px; font-size: 12.5px; font-weight: 600; }
   .wrap { padding: 14px 14px 0; max-width: 640px; margin: 0 auto; }
   #search { width: 100%; padding: 12px 14px; border-radius: 12px; border: none; font-size: 16px; background: #23234f; color: #fff; outline: none; }
-  #refreshBtn { width: 100%; padding: 10px 14px; margin-bottom: 10px; border-radius: 12px; border: 1px solid #3a3a6e; font-size: 15px; font-weight: 700; background: #23234f; color: #ffd166; cursor: pointer; }
   #ptr { display: none; text-align: center; padding: 14px; font-weight: 800; color: #ffd166; background: #1b1b4d; }
   #ptr.show { display: block; }
+  #toast { display: none; text-align: center; padding: 10px; font-weight: 800; color: #1b1b4d; background: #ffd166; border-radius: 12px; margin: 0 16px 10px; }
+  #toast.show { display: block; }
   #search::placeholder { color: #9d9dc4; }
   .chips { display: flex; gap: 7px; overflow-x: auto; padding: 12px 2px 4px; scrollbar-width: none; }
   .chips::-webkit-scrollbar { display: none; }
@@ -71,8 +72,8 @@
   </div>
 </header>
 <div id="ptr">↓ Relâche pour rafraîchir</div>
+<div id="toast"></div>
 <div class="wrap">
-  <button id="refreshBtn" type="button">↻ Rafraîchir la page</button>
   <input id="search" type="search" placeholder="🔎 Chercher : loto, concert, Vauvert, Garou…">
   <div class="chips" id="chips"></div>
   <div class="tabs">
@@ -258,7 +259,13 @@ document.getElementById("c-towns").textContent = COMMUNES.length + " communes ·
 document.getElementById("search").addEventListener("input", renderAll);
 document.getElementById("search").addEventListener("change", renderAll);
 window.addEventListener("pageshow", renderAll);
-document.getElementById("refreshBtn").addEventListener("click", () => location.reload());
+if (sessionStorage.getItem("ptrRefreshed") === "1") {
+  sessionStorage.removeItem("ptrRefreshed");
+  const toast = document.getElementById("toast");
+  toast.textContent = "✓ Page rafraîchie";
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 2500);
+}
 (function(){
   let startY = null, pulling = false;
   const ptr = document.getElementById("ptr");
@@ -280,7 +287,7 @@ document.getElementById("refreshBtn").addEventListener("click", () => location.r
     const dy = (e.changedTouches[0] ? e.changedTouches[0].clientY : 0) - startY;
     ptr.classList.remove("show");
     startY = null; pulling = false;
-    if (dy > 90) location.reload();
+    if (dy > 90) { sessionStorage.setItem("ptrRefreshed", "1"); location.reload(); }
   });
 })();
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => switchView(t.getAttribute("data-view"))));
