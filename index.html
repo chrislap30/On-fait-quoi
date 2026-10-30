@@ -15,6 +15,9 @@
   .counters span { background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35); padding: 5px 11px; border-radius: 999px; font-size: 12.5px; font-weight: 600; }
   .wrap { padding: 14px 14px 0; max-width: 640px; margin: 0 auto; }
   #search { width: 100%; padding: 12px 14px; border-radius: 12px; border: none; font-size: 16px; background: #23234f; color: #fff; outline: none; }
+  #refreshBtn { width: 100%; padding: 10px 14px; margin-bottom: 10px; border-radius: 12px; border: 1px solid #3a3a6e; font-size: 15px; font-weight: 700; background: #23234f; color: #ffd166; cursor: pointer; }
+  #ptr { display: none; text-align: center; padding: 14px; font-weight: 800; color: #ffd166; background: #1b1b4d; }
+  #ptr.show { display: block; }
   #search::placeholder { color: #9d9dc4; }
   .chips { display: flex; gap: 7px; overflow-x: auto; padding: 12px 2px 4px; scrollbar-width: none; }
   .chips::-webkit-scrollbar { display: none; }
@@ -67,7 +70,9 @@
     <span>Mis à jour le 29 octobre 2026</span>
   </div>
 </header>
+<div id="ptr">↓ Relâche pour rafraîchir</div>
 <div class="wrap">
+  <button id="refreshBtn" type="button">↻ Rafraîchir la page</button>
   <input id="search" type="search" placeholder="🔎 Chercher : loto, concert, Vauvert, Garou…">
   <div class="chips" id="chips"></div>
   <div class="tabs">
@@ -175,6 +180,7 @@ function renderTowns(){
   document.getElementById("view-towns").innerHTML = html;
   document.querySelectorAll(".town").forEach(t => t.addEventListener("click", () => {
     document.getElementById("search").value = t.getAttribute("data-town");
+    renderAll();
     switchView("date");
   }));
 }
@@ -232,6 +238,8 @@ function switchView(v){
   curView = v;
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.getAttribute("data-view") === v));
   ["date","weekend","towns"].forEach(x => document.getElementById("view-" + x).classList.toggle("hidden", x !== v));
+  renderAll();
+  window.scrollTo(0, 0);
 }
 function renderChips(){
   let html = "";
@@ -248,6 +256,33 @@ function renderChips(){
 document.getElementById("c-events").textContent = (EVENTS.length + RECUR_EVENTS.length) + " événements et marchés";
 document.getElementById("c-towns").textContent = COMMUNES.length + " communes · 70 km";
 document.getElementById("search").addEventListener("input", renderAll);
+document.getElementById("search").addEventListener("change", renderAll);
+window.addEventListener("pageshow", renderAll);
+document.getElementById("refreshBtn").addEventListener("click", () => location.reload());
+(function(){
+  let startY = null, pulling = false;
+  const ptr = document.getElementById("ptr");
+  document.addEventListener("touchstart", e => {
+    if (window.scrollY <= 0 && e.touches.length === 1) { startY = e.touches[0].clientY; pulling = false; }
+    else { startY = null; }
+  }, {passive: true});
+  document.addEventListener("touchmove", e => {
+    if (startY === null) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy > 20 && window.scrollY <= 0) {
+      pulling = true;
+      ptr.textContent = dy > 90 ? "↻ Relâche pour rafraîchir" : "↓ Tire vers le bas pour rafraîchir";
+      ptr.classList.add("show");
+    }
+  }, {passive: true});
+  document.addEventListener("touchend", e => {
+    if (!pulling || startY === null) return;
+    const dy = (e.changedTouches[0] ? e.changedTouches[0].clientY : 0) - startY;
+    ptr.classList.remove("show");
+    startY = null; pulling = false;
+    if (dy > 90) location.reload();
+  });
+})();
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => switchView(t.getAttribute("data-view"))));
 renderChips();
 renderAll();
