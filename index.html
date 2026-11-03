@@ -58,6 +58,7 @@
   #sheet .navrow { display: flex; gap: 10px; margin-top: 16px; }
   #sheet .navbtn { flex: 1; display: block; text-align: center; background: #2e7d32; color: #fff; padding: 13px 8px; border-radius: 12px; font-size: 15px; font-weight: 800; text-decoration: none; }
   #sheet .navbtn.waze { background: #05c8f7; color: #06303c; }
+  #sheet .navbtn.gcal { background: #4285f4; color: #fff; }
 </style>
 </head>
 <body>
@@ -68,7 +69,7 @@
   <div class="counters">
     <span id="c-events"></span>
     <span id="c-towns"></span>
-    <span>Mis à jour le 2 novembre 2026</span>
+    <span>Mis à jour le 3 novembre 2026</span>
   </div>
 </header>
 <div id="ptr">↓ Relâche pour rafraîchir</div>
@@ -185,6 +186,47 @@ function renderTowns(){
     switchView("date");
   }));
 }
+function parseHM(s){ var m = (s || "").match(/(\d{1,2})\s*h\s*(\d{2})?/); if (!m) return null; return [parseInt(m[1], 10), m[2] ? parseInt(m[2], 10) : 0]; }
+function parseTimes(s){ var parts = (s || "").split("–"); var a = parseHM(parts[0]); if (!a) return null; var b = parts[1] ? parseHM(parts[1]) : null; return {start: a, end: b}; }
+function parisOffsetMin(dateUTC){
+  var fmt = new Intl.DateTimeFormat("en-US", {timeZone: "Europe/Paris", hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit"});
+  var p = {}; fmt.formatToParts(dateUTC).forEach(function(x){ p[x.type] = x.value; });
+  var asUTC = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+  return (asUTC - dateUTC.getTime()) / 60000;
+}
+function parisToUTCStr(y, mo, d, h, mi){
+  var guess = new Date(Date.UTC(y, mo - 1, d, h, mi, 0));
+  var utc = new Date(guess.getTime() - parisOffsetMin(guess) * 60000);
+  var f = function(n){ return String(n).padStart(2, "0"); };
+  return utc.getUTCFullYear() + f(utc.getUTCMonth() + 1) + f(utc.getUTCDate()) + "T" + f(utc.getUTCHours()) + f(utc.getUTCMinutes()) + "00Z";
+}
+function addDaysISO(iso, n){ var dt = new Date(iso + "T12:00:00Z"); dt.setUTCDate(dt.getUTCDate() + n); return dt.toISOString().slice(0, 10); }
+function nextOccurrence(days){
+  var jsDays = (days || []).map(function(x){ return x % 7; });
+  var now = new Date();
+  for (var i = 0; i < 8; i++){ var dt = new Date(now); dt.setDate(now.getDate() + i); if (jsDays.indexOf(dt.getDay()) >= 0) return dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0"); }
+  return null;
+}
+function gcalURL(e){
+  var d1 = e.d1, d2 = e.d2;
+  if (d1 === "9999-01-01"){ var nxt = nextOccurrence(e.days || []); if (!nxt) return null; d1 = nxt; d2 = nxt; }
+  var t = parseTimes(e.time || "");
+  var dates;
+  if (t){
+    var s = d1.split("-").map(Number);
+    var en = t.end || [t.start[0] + 2, t.start[1]];
+    if (en[0] >= 24) en = [23, 59];
+    var eDay = d2;
+    if (d2 === d1 && t.end && (t.end[0] < t.start[0] || (t.end[0] === t.start[0] && t.end[1] <= t.start[1]))) eDay = addDaysISO(d1, 1);
+    var ep = eDay.split("-").map(Number);
+    dates = parisToUTCStr(s[0], s[1], s[2], t.start[0], t.start[1]) + "/" + parisToUTCStr(ep[0], ep[1], ep[2], en[0], en[1]);
+  } else {
+    dates = d1.replace(/-/g, "") + "/" + addDaysISO(d2, 1).replace(/-/g, "");
+  }
+  var details = (e.desc ? e.desc + " " : "") + "(" + e.type + ", " + e.town + ")";
+  var loc = (e.place ? e.place + ", " : "") + e.town;
+  return "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + encodeURIComponent(e.name) + "&dates=" + dates + "&details=" + encodeURIComponent(details) + "&location=" + encodeURIComponent(loc);
+}
 function openDetail(id){
   const e = BYFID[id]; if (!e) return;
   currentFid = id;
@@ -202,6 +244,8 @@ function openDetail(id){
   const navq = encodeURIComponent((e.place ? e.place + ", " : "") + e.town);
   html += '<div class="navrow"><a class="navbtn" href="https://www.google.com/maps/search/?api=1&query=' + navq + '">🧭 Itinéraire Maps</a>' +
           '<a class="navbtn waze" href="https://waze.com/ul?q=' + navq + '">🚗 Waze</a></div>';
+  var gcal = gcalURL(e);
+  if (gcal) html += '<div class="navrow"><a class="navbtn gcal" href="' + gcal + '" target="_blank" rel="noopener">📅 Ajouter à Google Agenda</a></div>';
   html += '<button class="bigfav" data-fav="' + esc(fid(e)) + '">' + (isFav(e) ? '⭐ Retirer des favoris' : '⭐ Ajouter aux favoris') + '</button>';
   const sheet = document.getElementById("sheet");
   sheet.innerHTML = html;
