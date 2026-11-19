@@ -231,7 +231,8 @@ function openDetail(id){
   const e = BYFID[id]; if (!e) return;
   currentFid = id;
   const d = distOf[e.town];
-  let html = '<span class="date">' + esc(e.label) + '</span>' +
+  let html = '<button class="close" id="sheet-close">✕</button>' +
+    '<span class="date">' + esc(e.label) + '</span>' +
     '<h2>' + esc(e.name) + '</h2>' +
     '<div class="row">📍 <b>' + esc(e.town) + '</b>' + (d !== undefined && d > 0 ? ' — à ' + d + ' km de Beauvoisin (à vol d\'oiseau)' : '') + '</div>';
   if (e.place) html += '<div class="row">🏠 ' + esc(e.place) + '</div>';
@@ -248,34 +249,17 @@ function openDetail(id){
   html += '<button class="bigfav" data-fav="' + esc(fid(e)) + '">' + (isFav(e) ? '⭐ Retirer des favoris' : '⭐ Ajouter aux favoris') + '</button>';
   const sheet = document.getElementById("sheet");
   sheet.innerHTML = html;
-  var wasHidden = sheet.classList.contains("hidden");
   sheet.classList.remove("hidden");
   document.getElementById("sheet-bg").classList.remove("hidden");
   sheet.scrollTop = 0;
-  if (wasHidden) { try { location.hash = "detail"; detailPushed = true; } catch(e) {} }
+  document.getElementById("sheet-close").addEventListener("click", closeDetail);
 }
 function closeDetail(){
   if (document.getElementById("sheet").classList.contains("hidden")) return;
   currentFid = null;
   document.getElementById("sheet").classList.add("hidden");
   document.getElementById("sheet-bg").classList.add("hidden");
-  if (detailPushed) { detailPushed = false; try { history.back(); } catch(e) {} }
 }
-window.addEventListener("popstate", function(){
-  if (document.getElementById("sheet").classList.contains("hidden")) return;
-  detailPushed = false;
-  currentFid = null;
-  document.getElementById("sheet").classList.add("hidden");
-  document.getElementById("sheet-bg").classList.add("hidden");
-});
-window.addEventListener("hashchange", function(){
-  if (location.hash) return;
-  if (document.getElementById("sheet").classList.contains("hidden")) return;
-  detailPushed = false;
-  currentFid = null;
-  document.getElementById("sheet").classList.add("hidden");
-  document.getElementById("sheet-bg").classList.add("hidden");
-});
 document.getElementById("sheet-bg").addEventListener("click", closeDetail);
 function toggleFav(id){
   const i = favs.indexOf(id);
