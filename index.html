@@ -269,6 +269,7 @@ window.addEventListener("popstate", function(){
   document.getElementById("sheet-bg").classList.add("hidden");
 });
 window.addEventListener("hashchange", function(){
+  if (location.hash) return;
   if (document.getElementById("sheet").classList.contains("hidden")) return;
   detailPushed = false;
   currentFid = null;
