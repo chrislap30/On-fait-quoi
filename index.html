@@ -231,8 +231,7 @@ function openDetail(id){
   const e = BYFID[id]; if (!e) return;
   currentFid = id;
   const d = distOf[e.town];
-  let html = '<button class="close" id="sheet-close">✕</button>' +
-    '<span class="date">' + esc(e.label) + '</span>' +
+  let html = '<span class="date">' + esc(e.label) + '</span>' +
     '<h2>' + esc(e.name) + '</h2>' +
     '<div class="row">📍 <b>' + esc(e.town) + '</b>' + (d !== undefined && d > 0 ? ' — à ' + d + ' km de Beauvoisin (à vol d\'oiseau)' : '') + '</div>';
   if (e.place) html += '<div class="row">🏠 ' + esc(e.place) + '</div>';
@@ -254,7 +253,6 @@ function openDetail(id){
   document.getElementById("sheet-bg").classList.remove("hidden");
   sheet.scrollTop = 0;
   if (wasHidden) { try { history.pushState({detail: id}, ""); detailPushed = true; } catch(e) {} }
-  document.getElementById("sheet-close").addEventListener("click", closeDetail);
 }
 function closeDetail(){
   if (document.getElementById("sheet").classList.contains("hidden")) return;
