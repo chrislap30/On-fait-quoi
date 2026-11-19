@@ -252,7 +252,7 @@ function openDetail(id){
   sheet.classList.remove("hidden");
   document.getElementById("sheet-bg").classList.remove("hidden");
   sheet.scrollTop = 0;
-  if (wasHidden) { try { history.pushState({detail: id}, ""); detailPushed = true; } catch(e) {} }
+  if (wasHidden) { try { location.hash = "detail"; detailPushed = true; } catch(e) {} }
 }
 function closeDetail(){
   if (document.getElementById("sheet").classList.contains("hidden")) return;
@@ -262,6 +262,13 @@ function closeDetail(){
   if (detailPushed) { detailPushed = false; try { history.back(); } catch(e) {} }
 }
 window.addEventListener("popstate", function(){
+  if (document.getElementById("sheet").classList.contains("hidden")) return;
+  detailPushed = false;
+  currentFid = null;
+  document.getElementById("sheet").classList.add("hidden");
+  document.getElementById("sheet-bg").classList.add("hidden");
+});
+window.addEventListener("hashchange", function(){
   if (document.getElementById("sheet").classList.contains("hidden")) return;
   detailPushed = false;
   currentFid = null;
