@@ -249,16 +249,27 @@ function openDetail(id){
   html += '<button class="bigfav" data-fav="' + esc(fid(e)) + '">' + (isFav(e) ? '⭐ Retirer des favoris' : '⭐ Ajouter aux favoris') + '</button>';
   const sheet = document.getElementById("sheet");
   sheet.innerHTML = html;
+  var wasHidden = sheet.classList.contains("hidden");
   sheet.classList.remove("hidden");
   document.getElementById("sheet-bg").classList.remove("hidden");
   sheet.scrollTop = 0;
+  if (wasHidden) { try { history.pushState({detail: id}, ""); detailPushed = true; } catch(e) {} }
   document.getElementById("sheet-close").addEventListener("click", closeDetail);
 }
 function closeDetail(){
+  if (document.getElementById("sheet").classList.contains("hidden")) return;
   currentFid = null;
   document.getElementById("sheet").classList.add("hidden");
   document.getElementById("sheet-bg").classList.add("hidden");
+  if (detailPushed) { detailPushed = false; try { history.back(); } catch(e) {} }
 }
+window.addEventListener("popstate", function(){
+  if (document.getElementById("sheet").classList.contains("hidden")) return;
+  detailPushed = false;
+  currentFid = null;
+  document.getElementById("sheet").classList.add("hidden");
+  document.getElementById("sheet-bg").classList.add("hidden");
+});
 document.getElementById("sheet-bg").addEventListener("click", closeDetail);
 function toggleFav(id){
   const i = favs.indexOf(id);
@@ -267,6 +278,7 @@ function toggleFav(id){
   renderAll();
 }
 let currentFid = null;
+var detailPushed = false;
 document.addEventListener("click", ev => {
   const fb = ev.target.closest("[data-fav]");
   if (fb) {
